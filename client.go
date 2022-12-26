@@ -430,14 +430,16 @@ func (c *Client) DialWithContext(pc context.Context) error {
 	ctx, cfn := context.WithDeadline(pc, time.Now().Add(c.cto))
 	defer cfn()
 
-	nd := net.Dialer{}
-	td := tls.Dialer{}
 	var err error
 	if c.ssl {
+		td := tls.Dialer{Config: c.tlsconfig}
+
 		c.enc = true
 		c.co, err = td.DialContext(ctx, "tcp", c.ServerAddr())
 	}
 	if !c.ssl {
+		nd := net.Dialer{}
+
 		c.co, err = nd.DialContext(ctx, "tcp", c.ServerAddr())
 	}
 	if err != nil {
