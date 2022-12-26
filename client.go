@@ -76,10 +76,16 @@ const (
 	DSNRcptNotifyDelay DSNRcptNotifyOption = "DELAY"
 )
 
+type Logger interface {
+	Debugf(format string, args ...any)
+}
+
 // Client is the SMTP client struct
 type Client struct {
 	// co is the net.Conn that the smtp.Client is based on
 	co net.Conn
+
+	Logger Logger
 
 	// Timeout for the SMTP server connection
 	cto time.Duration
@@ -427,15 +433,20 @@ func (c *Client) setDefaultHelo() error {
 
 // DialWithContext establishes a connection cto the SMTP server with a given context.Context
 func (c *Client) DialWithContext(pc context.Context) error {
+	c.Logger.Debugf("Starting Context With Deadline")
+
 	ctx, cfn := context.WithDeadline(pc, time.Now().Add(c.cto))
 	defer cfn()
 
 	var err error
 	if c.ssl {
+		c.Logger.Debugf("Starting TLS Dialer")
 		td := tls.Dialer{Config: c.tlsconfig}
 
 		c.enc = true
 		c.co, err = td.DialContext(ctx, "tcp", c.ServerAddr())
+
+		c.Logger.Debugf("Complete TLS Dialer")
 	}
 	if !c.ssl {
 		nd := net.Dialer{}
@@ -446,21 +457,30 @@ func (c *Client) DialWithContext(pc context.Context) error {
 		return err
 	}
 
+	c.Logger.Debugf("Starting Client")
 	c.sc, err = smtp.NewClient(c.co, c.host)
 	if err != nil {
 		return err
 	}
+	c.Logger.Debugf("Complete Client")
+
+	c.Logger.Debugf("Starting Hello")
 	if err := c.sc.Hello(c.helo); err != nil {
 		return err
 	}
+	c.Logger.Debugf("Complete Hello")
 
+	c.Logger.Debugf("Starting TLS")
 	if err := c.tls(); err != nil {
 		return err
 	}
+	c.Logger.Debugf("Complete TLS")
 
+	c.Logger.Debugf("Starting Auth")
 	if err := c.auth(); err != nil {
 		return err
 	}
+	c.Logger.Debugf("Complete Auth")
 
 	return nil
 }
