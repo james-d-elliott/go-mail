@@ -77,7 +77,7 @@ const (
 )
 
 type Logger interface {
-	Debugf(format string, args ...any)
+	Debugf(format string, args ...interface{})
 }
 
 // Client is the SMTP client struct
