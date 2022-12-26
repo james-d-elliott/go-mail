@@ -534,15 +534,24 @@ func (c *Client) DialAndSendWithContext(ctx context.Context, ml ...*Msg) error {
 // checkConn makes sure that a required server connection is available and extends the
 // connection deadline
 func (c *Client) checkConn() error {
+	c.Logger.Debugf("Connection Check Nil Start")
 	if c.co == nil {
 		return ErrNoActiveConnection
 	}
+	c.Logger.Debugf("Connection Check Nil End")
+
+	c.Logger.Debugf("Noop Check Start")
 	if err := c.sc.Noop(); err != nil {
 		return ErrNoActiveConnection
 	}
+	c.Logger.Debugf("Noop Check Complete")
+
+	c.Logger.Debugf("Set Deadline Start")
 	if err := c.co.SetDeadline(time.Now().Add(c.cto)); err != nil {
 		return ErrDeadlineExtendFailed
 	}
+
+	c.Logger.Debugf("Set Deadline Compelte")
 	return nil
 }
 
@@ -578,10 +587,13 @@ func (c *Client) tls() error {
 
 // auth will try to perform SMTP AUTH if requested
 func (c *Client) auth() error {
+	c.Logger.Debugf("Check Conn Start")
 	if err := c.checkConn(); err != nil {
 		return fmt.Errorf("failed to authenticate: %w", err)
 	}
+	c.Logger.Debugf("Check Conn Complete")
 	if c.sa == nil && c.satype != "" {
+		c.Logger.Debugf("Detect SATYPE")
 		sa, sat := c.sc.Extension("AUTH")
 		if !sa {
 			return fmt.Errorf("server does not support SMTP AUTH")
